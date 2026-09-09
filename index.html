@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-preset="holo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ruxinxue</title>
+<meta name="theme-color" content="#f3f0e8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f0e8; --bg-2: #d9d4c5; --ink: #17191a; --ink-2: #63676b;
+    --line: rgba(23, 25, 26, .16); --line-2: rgba(23, 25, 26, .48);
+    --accent: #a8843b; --gold-a: #8d6a2a; --gold-b: #f1d99a; --gold-c: #b8933f;
+    --holo: linear-gradient(100deg, #5a4bd1 0%, #1f9fc4 20%, #2aa86a 38%, #c9982a 56%, #d24f9a 76%, #5a4bd1 100%);
+    color-scheme: light;
+  }
+  [data-theme="dark"] {
+    --bg: #0a0b0b; --bg-2: #1a1c1a; --ink: #f2efe8; --ink-2: #9a9d97;
+    --line: rgba(242, 239, 232, .16); --line-2: rgba(242, 239, 232, .5);
+    --accent: #d9b662; --gold-a: #a3813a; --gold-b: #ffe9b0; --gold-c: #cfa751;
+    --holo: linear-gradient(100deg, #b7c4ff 0%, #8df5ff 20%, #a6ffd6 38%, #fff5a6 56%, #ffb1e6 76%, #b7c4ff 100%);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Fraunces", "Iowan Old Style", Georgia, serif; -webkit-font-smoothing: antialiased;
+    transition: background .6s ease, color .6s ease; overflow-x: hidden;
+  }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  ::selection { background: #7df9ff; color: #0a0b0b; }
+
+  /* ---------- fixed layers: canvas + background ---------- */
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; touch-action: pan-y; cursor: grab; }
+  canvas#c.dragging { cursor: grabbing; }
+  .fx { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .fx .glow { position: absolute; inset: 0; background: radial-gradient(52% 60% at 27% 52%, var(--bg-2) 0%, transparent 72%); }
+  .fx .grid {
+    position: absolute; inset: 0; opacity: .4;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 96px 96px;
+    -webkit-mask-image: radial-gradient(110% 90% at 50% 50%, #000 20%, transparent 100%); mask-image: radial-gradient(110% 90% at 50% 50%, #000 20%, transparent 100%);
+  }
+  .fx .blob {
+    position: absolute; right: -24vw; top: -28vw; width: 64vw; height: 64vw; border-radius: 50%; filter: blur(64px); will-change: transform;
+    background: conic-gradient(#ff6ad5, #7df9ff, #f9ff7d, #c7a4ff, #7dffb6, #ff9a6a, #ff6ad5);
+    animation: spin 52s linear infinite; opacity: .16; mix-blend-mode: multiply;
+  }
+  [data-theme="dark"] .fx .blob { opacity: .14; mix-blend-mode: screen; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fx .dots {
+    position: absolute; right: -14vw; top: 36vh; width: 44vw; height: 44vw; opacity: .2;
+    background-image: radial-gradient(circle, var(--ink) 1px, transparent 1.45px); background-size: 7px 7px;
+    -webkit-mask-image: radial-gradient(closest-side, #000 0%, transparent 100%); mask-image: radial-gradient(closest-side, #000 0%, transparent 100%);
+  }
+  .fx .grain {
+    position: absolute; inset: 0; opacity: .28; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  [data-theme="dark"] .fx .grain { mix-blend-mode: screen; opacity: .1; }
+
+  /* ---------- top bar ---------- */
+  .bar {
+    position: fixed; left: 0; right: 0; top: 0; z-index: 10; pointer-events: none;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .bar > * { pointer-events: auto; }
+  .bar .mark { display: flex; gap: 14px; align-items: center; }
+  .bar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .bar .right { display: flex; gap: 12px; align-items: center; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; backdrop-filter: blur(8px); }
+  .seg button { appearance: none; border: 0; background: transparent; color: var(--ink-2); font: inherit; letter-spacing: inherit; text-transform: inherit; padding: 6px 11px; border-radius: 999px; cursor: pointer; transition: .3s; }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--ink); color: var(--bg); }
+  .theme {
+    appearance: none; border: 1px solid var(--line); background: transparent; color: var(--ink);
+    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    transition: border-color .3s, transform .3s;
+  }
+  .theme:hover { border-color: var(--ink); transform: rotate(20deg); }
+  .theme svg { width: 15px; height: 15px; }
+  .theme .moon { display: none; }
+  [data-theme="dark"] .theme .sun { display: none; }
+  [data-theme="dark"] .theme .moon { display: block; }
+
+  /* ---------- hero ---------- */
+  .hero { height: 320vh; position: relative; z-index: 2; }
+  .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; pointer-events: none; }
+  .intro { position: absolute; right: 6vw; top: 50%; transform: translateY(-50%); width: min(44vw, 660px); z-index: 4; }
+  .intro > * { will-change: opacity, transform, filter; }
+  .eyebrow { margin: 0 0 18px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); display: flex; gap: 14px; align-items: center; }
+  .eyebrow .idx { color: var(--accent); }
+  .eyebrow .tick { width: 36px; height: 1px; background: var(--line-2); }
+  .name {
+    position: relative; margin: 0; font-weight: 300; font-style: italic; letter-spacing: -.02em; line-height: .9;
+    font-size: clamp(56px, 9.2vw, 152px); font-variation-settings: "opsz" 144; white-space: nowrap; color: var(--ink);
+  }
+  .name .ch {
+    display: inline-block; will-change: opacity, transform, filter;
+    background-image: var(--holo); background-size: var(--nw, 900px) 100%; background-repeat: repeat-x;
+    background-position: calc(var(--ox, 0px) + var(--shift, 0px)) 0;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .name::before, .name::after { content: attr(data-text); position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+  .name.glitch::before { opacity: .9; color: #19e6ff; clip-path: inset(12% 0 58% 0); animation: g1 .42s steps(3) both; }
+  .name.glitch::after { opacity: .9; color: #ff2fa0; clip-path: inset(62% 0 6% 0); animation: g2 .42s steps(3) both; }
+  @keyframes g1 { 0% { transform: translate(-7px, 0); } 50% { transform: translate(5px, -2px); clip-path: inset(30% 0 40% 0); } 100% { transform: none; } }
+  @keyframes g2 { 0% { transform: translate(7px, 0); } 50% { transform: translate(-5px, 2px); clip-path: inset(48% 0 22% 0); } 100% { transform: none; } }
+  .rule { height: 1px; margin: 30px 0 26px; transform-origin: left; background: linear-gradient(90deg, var(--gold-a), var(--gold-b) 45%, var(--gold-c) 70%, transparent); }
+  .line { margin: 0 0 12px; font-size: clamp(17px, 1.55vw, 24px); font-weight: 300; color: var(--ink); letter-spacing: .005em; }
+  .line .k { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .72em; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-right: 10px; }
+  .line .sep { color: var(--ink-2); margin: 0 .35em; }
+  .cue {
+    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 4;
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .cue .stem { width: 1px; height: 44px; background: var(--line); position: relative; overflow: hidden; }
+  .cue .stem::after { content: ""; position: absolute; left: 0; top: -100%; width: 100%; height: 100%; background: var(--accent); animation: drip 1.8s ease-in-out infinite; }
+  @keyframes drip { to { top: 100%; } }
+  .hud, .hint {
+    position: absolute; bottom: 30px; z-index: 4; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); transition: opacity .8s;
+  }
+  .hud { right: 28px; text-align: right; }
+  .hud b { color: var(--ink); font-weight: 500; }
+  .hint { left: 28px; opacity: 0; }
+  /* tech-stack callouts pinned to the flowers */
+  .tags { position: absolute; inset: 0; z-index: 4; }
+  .tag { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform, opacity; font: 500 10px/1.5 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .08em; color: var(--ink-2); white-space: nowrap; }
+  .tag b { color: var(--accent); font-weight: 500; margin-right: 9px; }
+  .tag i { font-style: normal; color: var(--ink); }
+  .tag small { display: block; font-size: 9.5px; opacity: .85; }
+  .leads { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; overflow: visible; }
+  .leads polyline { fill: none; stroke: var(--line-2); stroke-width: 1; opacity: 0; }
+  .leads circle { fill: var(--accent); opacity: 0; }
+
+  @media (max-width: 820px), (max-aspect-ratio: 19/20) {
+    .bar { padding: 14px 18px; }
+    .intro { right: auto; left: 6vw; top: auto; bottom: 9vh; transform: none; width: 88vw; }
+    .name { font-size: clamp(48px, 15vw, 96px); }
+    .cue { bottom: auto; top: 58vh; }
+    .hud, .hint, .tags, .leads { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div class="fx">
+  <div class="glow"></div>
+  <div class="blob"></div>
+  <div class="dots"></div>
+  <div class="grid"></div>
+  <div class="grain"></div>
+</div>
+
+<header class="bar mono">
+  <div class="mark"><span class="dot"></span><span>rx / 2026</span></div>
+  <div class="right">
+    <div class="seg" id="seg" role="group" aria-label="material preset">
+      <button data-preset="pearl">pearl</button><button data-preset="holo" class="on">holo</button><button data-preset="chrome">chrome</button>
+    </div>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="stage">
+    <svg class="leads" id="leads"></svg>
+    <div class="tags" id="tags"></div>
+    <div class="intro">
+      <p class="eyebrow mono" data-at="0.24" data-len="0.1"><span class="idx">01</span><span class="tick"></span><span>hello, i'm</span></p>
+      <h1 class="name" id="name" data-text="ruxinxue" data-at="0.3" data-len="0.16">ruxinxue</h1>
+      <div class="rule" data-at="0.5" data-len="0.12"></div>
+      <p class="line" data-at="0.56" data-len="0.1"><span class="k">Duke ECE</span>2nd year</p>
+      <p class="line" data-at="0.66" data-len="0.1"><span class="k">Work</span>SDE<span class="sep">·</span>Agent development<span class="sep">·</span>Full-stack</p>
+    </div>
+    <div class="cue mono" id="cue"><span>scroll to grow</span><div class="stem"></div></div>
+    <div class="hud mono">bloom <b id="pct">000</b>%</div>
+    <div class="hint mono" id="hint">drag to turn · 360°</div>
+  </div>
+</section>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =========================================================
+   helpers
+   ========================================================= */
+const D2R = Math.PI / 180;
+const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0), Z = new THREE.Vector3(0, 0, 1);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const range = (p, a, b) => clamp((p - a) / (b - a));
+const smoothInv = x => 0.5 - Math.sin(Math.asin(1 - 2 * clamp(x)) / 3);   // inverse of smooth()
+const backOut = x => { x = clamp(x); const c = 1.25; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const mulberry = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+// local X -> dir, local Y ~ up hint (default: face the viewer), roll about dir
+function leafQuat(dir, roll = 0, up = Z) {
+  const x = dir.clone().normalize();
+  let y = up.clone().sub(x.clone().multiplyScalar(up.dot(x)));
+  if (y.lengthSq() < 1e-6) y = Y.clone().sub(x.clone().multiplyScalar(Y.dot(x)));
+  y.normalize();
+  const z = new THREE.Vector3().crossVectors(x, y);
+  const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+  if (roll) q.premultiply(new THREE.Quaternion().setFromAxisAngle(x, roll));
+  return q;
+}
+// local Y (flower axis) -> dir, roll about dir
+function flowerQuat(dir, roll = 0) {
+  const y = dir.clone().normalize();
+  let x = new THREE.Vector3().crossVectors(Z, y);
+  if (x.lengthSq() < 1e-6) x = new THREE.Vector3().crossVectors(X, y);
+  x.normalize();
+  const z = new THREE.Vector3().crossVectors(x, y);
+  const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+  if (roll) q.premultiply(new THREE.Quaternion().setFromAxisAngle(y, roll));
+  return q;
+}
+
+/* =========================================================
+   renderer / scene
+   ========================================================= */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+camera.position.set(0, 0, 9.6);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8e9280, 0.55);
+const key = new THREE.DirectionalLight(0xfff1dc, 2.2); key.position.set(3.5, 4, 5);
+const rim = new THREE.DirectionalLight(0xd6e8ff, 1.6); rim.position.set(-4, 2.5, -3);
+const fill = new THREE.PointLight(0xffe9c4, 12, 30, 2); fill.position.set(-2.5, -1.5, 4);
+scene.add(hemi, key, rim, fill);
+
+const root = new THREE.Group();   // placed left
+const spin = new THREE.Group();   // rotation (drag / parallax / sway)
+const bouquet = new THREE.Group();// centered content
+root.add(spin); spin.add(bouquet); scene.add(root);
+
+/* =========================================================
+   materials
+   ========================================================= */
+const DS = THREE.DoubleSide;
+const MAT = {
+  petal: new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.92, roughness: 0.22, clearcoat: 0.7, clearcoatRoughness: 0.16, sheen: 0.45, sheenColor: new THREE.Color(0xffe2b5), sheenRoughness: 0.5, iridescence: 0.22, iridescenceIOR: 1.35, envMapIntensity: 1.15, side: DS }),
+  leaf: new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.86, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 0.6, side: DS }),
+  stem: new THREE.MeshPhysicalMaterial({ color: 0x3f6236, metalness: 0.88, roughness: 0.4, clearcoat: 0.5, envMapIntensity: 0.8, side: DS }),
+  calyx: new THREE.MeshPhysicalMaterial({ color: 0x8fb078, metalness: 0.85, roughness: 0.34, clearcoat: 0.5, side: DS }),
+  gold: new THREE.MeshPhysicalMaterial({ color: 0xdcb05a, metalness: 1, roughness: 0.2, envMapIntensity: 1.3 }),
+  anther: new THREE.MeshPhysicalMaterial({ color: 0xb87a34, metalness: 0.9, roughness: 0.42 }),
+  greenBud: new THREE.MeshPhysicalMaterial({ color: 0x86ad6d, metalness: 0.88, roughness: 0.32, clearcoat: 0.6 }),
+  cream: new THREE.MeshPhysicalMaterial({ color: 0xf7efe0, metalness: 0.9, roughness: 0.22, clearcoat: 0.6, iridescence: 0.2 }),
+  wingCream: new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.85, roughness: 0.24, iridescence: 0.3, iridescenceIOR: 1.4, iridescenceThicknessRange: [300, 700], clearcoat: 0.8, clearcoatRoughness: 0.1, side: DS }),
+  wingTeal: new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.7, roughness: 0.3, iridescence: 0.55, iridescenceIOR: 1.6, iridescenceThicknessRange: [220, 640], clearcoat: 0.8, side: DS }),
+  body: new THREE.MeshPhysicalMaterial({ color: 0x3a3833, metalness: 0.9, roughness: 0.38 }),
+};
+const growMats = [];
+// stem material with a "grow" cut-off: fragments beyond uGrow along the tube are discarded
+function growMaterial(uni) {
+  const m = new THREE.MeshPhysicalMaterial({ color: 0x3f6236, metalness: 0.88, roughness: 0.4, clearcoat: 0.5, envMapIntensity: 0.8, side: DS });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uGrow = uni;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aAlong;\nvarying float vAlong;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAlong = aAlong;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vAlong;\nuniform float uGrow;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vAlong > uGrow) discard;');
+  };
+  m.customProgramCacheKey = () => 'grow';
+  growMats.push(m);
+  return m;
+}
+
+/* =========================================================
+   geometry builders
+   ========================================================= */
+// tapered tube along a curve; stores 0..1 position along the tube in aAlong
+function tubeGeo(curve, segs, radial, r0, r1, tipPow = 1) {
+  const fr = curve.computeFrenetFrames(segs, false);
+  const pos = [], along = [], idx = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs, P = curve.getPointAt(t), r = r0 + (r1 - r0) * Math.pow(t, tipPow);
+    const N = fr.normals[i], B = fr.binormals[i];
+    for (let j = 0; j <= radial; j++) {
+      const a = j / radial * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      pos.push(P.x + r * (c * N.x + s * B.x), P.y + r * (c * N.y + s * B.y), P.z + r * (c * N.z + s * B.z));
+      along.push(t);
+    }
+  }
+  for (let i = 0; i < segs; i++) for (let j = 0; j < radial; j++) {
+    const a = i * (radial + 1) + j, b = a + radial + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('aAlong', new THREE.Float32BufferAttribute(along, 1));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// parametric surface with optional vertex colours
+function param(fn, slices, stacks, colorFn) {
+  const g = new ParametricGeometry(fn, slices, stacks);
+  if (colorFn) {
+    const col = new Float32Array(g.attributes.position.count * 3), c = new THREE.Color();
+    let k = 0;
+    for (let i = 0; i <= stacks; i++) { const v = i / stacks; for (let j = 0; j <= slices; j++) { colorFn(j / slices, v, c); col[k++] = c.r; col[k++] = c.g; col[k++] = c.b; } }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  }
+  return g;
+}
+
+const C_GOLD = new THREE.Color(0.86, 0.66, 0.34), C_PEARL = new THREE.Color(0.995, 0.98, 0.945), C_PEARL2 = new THREE.Color(0.97, 0.95, 0.9);
+const petalColor = (u, v, c) => { c.copy(C_GOLD).lerp(C_PEARL, smooth((u - 0.03) / 0.33)); c.lerp(C_PEARL2, Math.abs(v * 2 - 1) * 0.4 * u); };
+const C_LF_A = new THREE.Color(0.035, 0.15, 0.10), C_LF_B = new THREE.Color(0.13, 0.40, 0.26), C_LF_V = new THREE.Color(0.36, 0.64, 0.46);
+const leafColor = (u, v, c) => { const vv = v * 2 - 1; c.copy(C_LF_A).lerp(C_LF_B, Math.pow(u, 1.3)); c.lerp(C_LF_V, 0.45 * Math.exp(-(vv * 8) * (vv * 8)) * (1 - u * 0.4) + 0.1 * Math.pow(Math.abs(vv), 3)); };
+const C_SM_C = new THREE.Color(0.93, 0.85, 0.66);
+const smallPetalColor = (u, v, c) => { c.copy(C_SM_C).lerp(C_PEARL, smooth((u - 0.02) / 0.3)); };
+
+/* ---------- lily petal: parametric trumpet tepal, `open` 0 = bud, 1 = bloom ---------- */
+function petalFn(open, o) {
+  const { L = 1.7, W = 0.54, r0 = 0.14, ruf = 0.12, seed = 0, curl = 0.5, twist = 0.4, sweep = 0.15 } = o;
+  const N = 64, tab = [];
+  let r = r0, y = 0;
+  for (let i = 0; i <= N; i++) {
+    const u = i / N;
+    const thO = (8 + 60 * u + (80 + 110 * curl) * Math.pow(u, 4)) * D2R;   // open: bowl, then the tip rolls back
+    const thC = (14 - 30 * u) * D2R;                                        // closed: converge at the tip
+    const th = thC + (thO - thC) * open;
+    tab.push({ r, y, th });
+    const ds = L / N; r += Math.sin(th) * ds; y += Math.cos(th) * ds;
+  }
+  const wf = 0.55 + 0.45 * open, k = 0.15 + 0.85 * open;   // buds stay smooth: ruffle / twist / sweep fade out when closed
+  return (u, v, t) => {
+    v = v * 2 - 1;
+    const f = u * N, i = Math.min(N - 1, Math.floor(f)), a = f - i, A = tab[i], B = tab[i + 1];
+    const rr = A.r + (B.r - A.r) * a, yy = A.y + (B.y - A.y) * a, th = A.th + (B.th - A.th) * a;
+    const w = W * wf * (0.2 + 0.8 * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.85)), 0.9));
+    const nx = -Math.cos(th), ny = Math.sin(th);                 // inward normal in (r, y)
+    const kcO = 0.7 * Math.pow(1 - u, 1.2) - 0.4 * u * u;        // cupped base, edges fold back at the tip
+    const kcC = 0.75 - 0.2 * u;
+    const kc = kcC + (kcO - kcC) * open;
+    let off = w * kc * v * v;
+    off += ruf * w * smooth((u - 0.25) / 0.6) * (0.35 * v * v + 0.65 * Math.pow(v, 4)) * Math.sin(u * 13 + seed * 1.7 + v * 2.2) * k;
+    off -= 0.045 * w * Math.exp(-(v * 6) * (v * 6));             // midrib keel
+    const tw = twist * u * u * k, ct = Math.cos(tw), st = Math.sin(tw);   // petal twists around its own midrib
+    const s = v * w, sw = sweep * u * u * L * k;                          // and sweeps sideways
+    t.set(rr + nx * (st * s + ct * off), yy + ny * (st * s + ct * off), ct * s - st * off + sw);
+  };
+}
+
+// bend a geometry built along +Y into an arc (total angle B over length L) toward the XZ direction az
+function bendGeometry(geo, B, L, az) {
+  if (Math.abs(B) < 1e-4) return geo;
+  const R = L / B, sx = Math.sin(az), cz = Math.cos(az), p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const s = x * sx + z * cz, t = x * cz - z * sx;
+    const r = R - s, a = y / R, s2 = R - r * Math.cos(a), y2 = r * Math.sin(a);
+    p.setXYZ(i, t * cz + s2 * sx, y2, -t * sx + s2 * cz);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+function bakeBend(mesh, B, L, az) {
+  mesh.updateMatrix();
+  mesh.geometry = bendGeometry(mesh.geometry.clone().applyMatrix4(mesh.matrix), B, L, az);
+  mesh.position.set(0, 0, 0); mesh.quaternion.identity(); mesh.scale.set(1, 1, 1);
+}
+
+// add gentle S-curves to a stem's control points (ends stay pinned)
+function curvy(pts, amp, seed) {
+  const base = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5), n = 7, out = [pts[0].clone()];
+  for (let i = 1; i < n; i++) {
+    const t = i / n, P = base.getPointAt(t), T = base.getTangentAt(t);
+    let n1 = new THREE.Vector3().crossVectors(T, Z); if (n1.lengthSq() < 1e-4) n1 = new THREE.Vector3().crossVectors(T, X);
+    n1.normalize();
+    const n2 = new THREE.Vector3().crossVectors(T, n1), env = Math.sin(t * Math.PI);
+    P.addScaledVector(n1, amp * env * Math.sin(t * 5.2 + seed)).addScaledVector(n2, amp * 0.6 * env * Math.cos(t * 3.7 + seed * 1.3));
+    out.push(P);
+  }
+  out.push(pts[pts.length - 1].clone());
+  return out;
+}
+
+/* ---------- leaf: lanceolate, curls / twists / waves ---------- */
+function leafFn(o) {
+  const { L = 1, W = 0.25, curl = 0.6, twist = 0.35, cup = 0.28, wave = 0.05, seed = 0, lift = 0.2 } = o;
+  const N = 40, tab = [];
+  let x = 0, y = 0;
+  for (let i = 0; i <= N; i++) {
+    const u = i / N;
+    const th = lift - curl * u * u + 0.08 * Math.sin(u * 5 + seed);
+    tab.push({ x, y, th });
+    const ds = L / N; x += Math.cos(th) * ds; y += Math.sin(th) * ds;
+  }
+  return (u, v, t) => {
+    v = v * 2 - 1;
+    const f = u * N, i = Math.min(N - 1, Math.floor(f)), a = f - i, A = tab[i], B = tab[i + 1];
+    const x0 = A.x + (B.x - A.x) * a, y0 = A.y + (B.y - A.y) * a, th = A.th + (B.th - A.th) * a;
+    const w = W * Math.pow(Math.sin(Math.PI * Math.pow(u, 0.6)), 1.15) + 0.004;   // lanceolate: widest at ~1/3, long point
+    const nx = -Math.sin(th), ny = Math.cos(th);
+    const tw = twist * u, ct = Math.cos(tw), st = Math.sin(tw);
+    const off = cup * w * v * v
+      + wave * w * Math.sin(u * 17 + seed * 3 + v) * Math.pow(v, 4) * smooth(u * 3)
+      - 0.06 * w * Math.exp(-(v * 6) * (v * 6));
+    const s = v * w;
+    t.set(x0 + nx * (st * s + ct * off), y0 + ny * (st * s + ct * off), ct * s - st * off);
+  };
+}
+
+/* ---------- small 5-petal flower petal ---------- */
+function smallPetalFn(o) {
+  const { L = 0.3, W = 0.15, seed = 0 } = o;
+  return (u, v, t) => {
+    v = v * 2 - 1;
+    const w = W * Math.pow(Math.sin(Math.PI * u), 0.6) * (1 - 0.15 * Math.abs(Math.sin(u * 3 + seed)));
+    const y = 0.35 * w * v * v - 0.22 * L * u * u + 0.02 * Math.sin(v * 4 + seed) * u;
+    t.set(u * L, y, v * w);
+  };
+}
+
+/* =========================================================
+   parts
+   ========================================================= */
+function makeLeaf(o) {
+  const g = param(leafFn(o), 26, 10, leafColor);
+  return new THREE.Mesh(g, MAT.leaf);
+}
+
+function makeStamens() {
+  const g = new THREE.Group();
+  for (let i = 0; i < 6; i++) {
+    const az = i * Math.PI / 3 + 0.3, c = Math.cos(az), s = Math.sin(az);
+    const curve = new THREE.CatmullRomCurve3([V(0.03 * c, 0.12, 0.03 * s), V(0.2 * c, 0.8, 0.2 * s), V(0.5 * c, 1.32, 0.5 * s)]);
+    g.add(new THREE.Mesh(tubeGeo(curve, 10, 6, 0.016, 0.012), MAT.gold));
+    const an = new THREE.Mesh(new THREE.CapsuleGeometry(0.024, 0.09, 4, 8), MAT.anther);
+    an.position.copy(curve.getPointAt(1));
+    const tan = curve.getTangentAt(1), tangential = new THREE.Vector3().crossVectors(tan, V(c, 0, s)).normalize();
+    an.quaternion.setFromUnitVectors(Y, tangential.lerp(tan, 0.25).normalize());
+    g.add(an);
+  }
+  const pist = new THREE.CatmullRomCurve3([V(0, 0.12, 0), V(0.03, 0.8, 0.05), V(0.06, 1.5, 0.03)]);
+  g.add(new THREE.Mesh(tubeGeo(pist, 10, 6, 0.022, 0.02), MAT.gold));
+  const top = pist.getPointAt(1);
+  for (let i = 0; i < 3; i++) {
+    const a = i * Math.PI * 2 / 3, st = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 8), MAT.anther);
+    st.position.set(top.x + 0.035 * Math.cos(a), top.y + 0.02, top.z + 0.035 * Math.sin(a));
+    g.add(st);
+  }
+  return g;
+}
+
+function makeLily(o) {
+  const { scale = 0.5, seed = 1, Lmul = 1, Wmul = 1, open = 1, bend = 0, bendAz = 0 } = o;
+  const rng = mulberry(seed * 977 + 5);
+  const g = new THREE.Group(), petals = [], Lb = 1.7 * Lmul;
+  for (let i = 0; i < 6; i++) {
+    const inner = i % 2 === 1, sgn = rng() < 0.7 ? 1 : -1;
+    const opts = { L: Lb * (inner ? 0.96 : 1) * (0.97 + 0.06 * rng()), W: 0.54 * Wmul * (inner ? 1.06 : 1), r0: inner ? 0.12 : 0.16, seed: seed * 10 + i, ruf: 0.12,
+      curl: 0.25 + 0.7 * rng(), twist: sgn * (0.25 + 0.4 * rng()), sweep: sgn * (0.08 + 0.14 * rng()) };
+    const rot = new THREE.Matrix4().makeRotationY(i * Math.PI / 3 + (rng() - 0.5) * 0.1);
+    const gO = bendGeometry(param(petalFn(1, opts), 30, 12, petalColor).applyMatrix4(rot), bend, Lb, bendAz);
+    const gC = bendGeometry(param(petalFn(0, opts), 30, 12).applyMatrix4(rot), bend, Lb, bendAz);
+    gO.morphAttributes.position = [gC.attributes.position];
+    gO.morphAttributes.normal = [gC.attributes.normal];
+    const m = new THREE.Mesh(gO, MAT.petal);
+    petals.push(m); g.add(m);
+  }
+  const calyx = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.06, 0.34, 14, 1, true), MAT.calyx);
+  calyx.position.y = -0.1; bakeBend(calyx, bend, Lb, bendAz); g.add(calyx);
+  const stamens = makeStamens();
+  stamens.traverse(m => { if (m.isMesh) bakeBend(m, bend, Lb, bendAz); });
+  g.add(stamens);
+  g.scale.setScalar(scale);
+  g.userData.setOpen = op => { for (const m of petals) m.morphTargetInfluences[0] = 1 - op; stamens.scale.setScalar(0.3 + 0.7 * op); stamens.visible = op > 0.08; };
+  g.userData.setOpen(open);
+  return g;
+}
+
+let smallPetalGeo = null, smallBudGeo = null;
+function makeSmallFlower(o = {}) {
+  const { seed = 0 } = o;
+  smallPetalGeo ||= param(smallPetalFn({ L: 0.3, W: 0.15 }), 12, 8, smallPetalColor);
+  const g = new THREE.Group(), rng = mulberry(seed * 31 + 7);
+  const tilt = 0.35 + rng() * 0.25;
+  for (let i = 0; i < 5; i++) {
+    const m = new THREE.Mesh(smallPetalGeo, MAT.petal);
+    m.quaternion.setFromAxisAngle(Y, i * Math.PI * 2 / 5 + (rng() - 0.5) * 0.15).multiply(new THREE.Quaternion().setFromAxisAngle(Z, tilt + (rng() - 0.5) * 0.1));
+    g.add(m);
+  }
+  const center = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), MAT.gold); center.position.y = 0.02; g.add(center);
+  for (let i = 0; i < 5; i++) {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 5), MAT.anther);
+    const a = i * Math.PI * 2 / 5 + 0.4; d.position.set(0.055 * Math.cos(a), 0.05, 0.055 * Math.sin(a)); g.add(d);
+  }
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.025, 0.16, 10, 1, true), MAT.calyx); tube.position.y = -0.08; g.add(tube);
+  return g;
+}
+function makeSmallBud() {
+  smallBudGeo ||= new THREE.CapsuleGeometry(0.05, 0.1, 4, 10);
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(smallBudGeo, MAT.cream); b.position.y = 0.08; b.scale.set(1, 1.15, 1); g.add(b);
+  const cal = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.14, 8, 1, true), MAT.calyx); cal.rotation.x = Math.PI; cal.position.y = 0.02; g.add(cal);
+  return g;
+}
+
+// cluster of small flowers on short stalks fanning around local +Y
+function makeCluster(o) {
+  const { n = 5, spread = 0.6, len = 0.35, scale = 0.3, seed = 1, budRatio = 0.3, leaves = 0 } = o;
+  const rng = mulberry(seed * 7919 + 13);
+  const g = new THREE.Group(), items = [];
+  const total = n + leaves;
+  for (let k = 0; k < total; k++) {
+    const isLeaf = k >= n;
+    const ang = n === 1 && !isLeaf ? 0 : spread * (0.3 + 0.7 * rng()) * (isLeaf ? 1.4 : 1);
+    const az = k / total * Math.PI * 2 + rng() * 1.2;
+    const d = V(Math.sin(ang) * Math.cos(az), Math.cos(ang), Math.sin(ang) * Math.sin(az));
+    const ln = len * (0.5 + 0.7 * rng()) * (isLeaf ? 0.5 : 1);
+    const item = new THREE.Group();
+    const mid = d.clone().multiplyScalar(ln * 0.5).add(V((rng() - 0.5) * 0.08, (rng() - 0.5) * 0.08, (rng() - 0.5) * 0.08));
+    const curve = new THREE.CatmullRomCurve3([V(0, 0, 0), mid, d.clone().multiplyScalar(ln)]);
+    item.add(new THREE.Mesh(tubeGeo(curve, 8, 6, 0.013, 0.009), MAT.stem));
+    let head;
+    if (isLeaf) {
+      head = makeLeaf({ L: 0.28 + rng() * 0.12, W: 0.06, curl: 0.6, twist: 0.5, seed: rng() * 9 });
+      head.quaternion.copy(leafQuat(d, (rng() - 0.5) * 2));
+    } else {
+      const isBud = n > 1 && rng() < budRatio;
+      head = isBud ? makeSmallBud() : makeSmallFlower({ seed: seed * 10 + k });
+      head.quaternion.copy(flowerQuat(d, rng() * 6.28));
+      head.scale.setScalar(scale * (isBud ? 0.85 : 1) * (0.85 + 0.3 * rng()));
+    }
+    head.position.copy(d).multiplyScalar(ln);
+    item.add(head); g.add(item);
+    items.push({ item, delay: n === 1 ? 0 : rng() * 0.55 });
+  }
+  g.userData.setGrow = t => { for (const it of items) { const e = backOut(range(t, it.delay, it.delay + 0.45)); it.item.scale.setScalar(Math.max(e, 1e-4)); } };
+  return g;
+}
+
+function makeTendril(dir) {
+  const d = dir.clone().normalize();
+  let n1 = new THREE.Vector3().crossVectors(d, Z); if (n1.lengthSq() < 1e-5) n1 = new THREE.Vector3().crossVectors(d, X);
+  n1.normalize(); const n2 = new THREE.Vector3().crossVectors(d, n1);
+  const pts = [];
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30, a = t * t * 9;
+    const rad = 0.075 * smooth(t * 2) * (1 - 0.35 * t);
+    pts.push(d.clone().multiplyScalar(0.16 * t + 0.02).add(n1.clone().multiplyScalar(rad * Math.cos(a))).add(n2.clone().multiplyScalar(rad * Math.sin(a) - 0.04 * t)));
+  }
+  return new THREE.Mesh(tubeGeo(new THREE.CatmullRomCurve3(pts), 40, 5, 0.012, 0.006), MAT.stem);
+}
+
+function makeMiniBud(dir, len) {
+  const g = new THREE.Group(), d = dir.clone().normalize();
+  const curve = new THREE.CatmullRomCurve3([V(0, 0, 0), d.clone().multiplyScalar(len * 0.5).add(V(0.03, 0, 0.02)), d.clone().multiplyScalar(len)]);
+  g.add(new THREE.Mesh(tubeGeo(curve, 8, 6, 0.016, 0.012), MAT.stem));
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), MAT.greenBud);
+  b.scale.set(1, 1.7, 1); b.position.copy(d).multiplyScalar(len + 0.06); b.quaternion.copy(flowerQuat(d));
+  g.add(b);
+  return g;
+}
+
+/* ---------- butterfly ---------- */
+function wingGeo(shape, inner, outer, edge) {
+  const g = new THREE.ShapeGeometry(shape, 14);
+  const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
+  let maxD = 0; for (let i = 0; i < p.count; i++) maxD = Math.max(maxD, Math.hypot(p.getX(i), p.getY(i)));
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), d = Math.hypot(x, y) / maxD;
+    p.setZ(i, -0.09 * x * x);
+    c.copy(inner).lerp(outer, smooth(d * 1.3)).lerp(edge, smooth((d - 0.72) / 0.28));
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+function makeButterfly(o) {
+  const { size = 1, teal = false } = o;
+  const g = new THREE.Group();
+  const fore = new THREE.Shape();
+  fore.moveTo(0, 0.02);
+  fore.bezierCurveTo(0.12, 0.3, 0.42, 0.6, 0.66, 0.56);
+  fore.bezierCurveTo(0.78, 0.5, 0.74, 0.28, 0.6, 0.12);
+  fore.bezierCurveTo(0.44, -0.02, 0.15, -0.05, 0, -0.03);
+  const hind = new THREE.Shape();
+  hind.moveTo(0, -0.02);
+  hind.bezierCurveTo(0.2, -0.02, 0.48, -0.06, 0.54, -0.22);
+  hind.bezierCurveTo(0.6, -0.42, 0.44, -0.58, 0.34, -0.62);
+  hind.bezierCurveTo(0.3, -0.72, 0.24, -0.82, 0.2, -0.68);
+  hind.bezierCurveTo(0.12, -0.52, 0.05, -0.36, 0, -0.28);
+  const inner = teal ? new THREE.Color(0.10, 0.42, 0.40) : new THREE.Color(0.78, 0.66, 0.44);
+  const outer = teal ? new THREE.Color(0.35, 0.78, 0.72) : new THREE.Color(0.99, 0.975, 0.94);
+  const edge = teal ? new THREE.Color(0.55, 0.92, 0.86) : new THREE.Color(0.84, 0.72, 0.48);
+  const mat = teal ? MAT.wingTeal : MAT.wingCream;
+  const right = new THREE.Group();
+  right.add(new THREE.Mesh(wingGeo(fore, inner, outer, edge), mat), new THREE.Mesh(wingGeo(hind, inner, outer, edge), mat));
+  const left = right.clone(); left.scale.x = -1;
+  g.add(right, left);
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.028, 0.34, 4, 10), MAT.body); body.position.y = -0.1; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), MAT.body); head.position.y = 0.14; g.add(head);
+  for (const s of [-1, 1]) {
+    const c = new THREE.CatmullRomCurve3([V(0, 0.16, 0), V(0.08 * s, 0.32, 0.04), V(0.2 * s, 0.42, 0.05)]);
+    g.add(new THREE.Mesh(tubeGeo(c, 8, 4, 0.008, 0.006), MAT.body));
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.014, 6, 5), MAT.gold); tip.position.copy(c.getPointAt(1)); g.add(tip);
+  }
+  g.scale.setScalar(size);
+  g.userData.flap = a => { right.rotation.y = -a; left.rotation.y = a; };
+  return g;
+}
+
+/* =========================================================
+   bouquet definition  (x right, y up, z toward viewer)
+   ========================================================= */
+const B = [-0.3, -2.25, 0];
+const STEMS = [
+  // lily A – top centre, faces the viewer
+  { pts: [B, [-0.15, -1.3, 0.15], [0.05, -0.2, 0.35], [0.2, 0.75, 0.5]], r: [0.03, 0.02], t: [0.02, 0.40], items: [
+    { type: 'leaf', s: 0.22, dir: [-0.6, 0.72, 0.35], len: 1.25, w: 0.24, roll: -0.7, curl: 0.55 },
+    { type: 'leaf', s: 0.45, dir: [-0.85, 0.1, 0.45], len: 1.0, w: 0.22, roll: -0.5, curl: 0.6 },
+    { type: 'leaf', s: 0.7, dir: [0.9, 0.35, 0.25], len: 0.9, w: 0.2, roll: 0.6, curl: 0.5 },
+    { type: 'cluster', s: 0.9, dir: [0.55, 0.1, 0.85], n: 5, scale: 0.27, len: 0.32, seed: 12, leaves: 1 },
+    { type: 'lily', s: 1, dir: [0.12, 0.45, 0.88], scale: 0.62, seed: 1, bend: 0.3 } ] },
+  // lily B – right, faces right-front
+  { pts: [B, [0.2, -1.5, -0.15], [0.55, -0.45, -0.25], [0.85, 0.3, -0.05]], r: [0.03, 0.02], t: [0.05, 0.44], items: [
+    { type: 'leaf', s: 0.28, dir: [0.75, 0.6, 0.3], len: 1.15, w: 0.23, roll: 0.7, curl: 0.5 },
+    { type: 'leaf', s: 0.55, dir: [0.95, -0.15, 0.25], len: 0.95, w: 0.21, roll: 0.3, curl: 0.7 },
+    { type: 'leaf', s: 0.85, dir: [0.7, 0.6, -0.35], len: 0.8, w: 0.18, roll: -0.4, curl: 0.4 },
+    { type: 'cluster', s: 0.92, dir: [0.35, -0.55, 0.75], n: 4, scale: 0.26, len: 0.3, seed: 13, leaves: 1 },
+    { type: 'lily', s: 1, dir: [0.82, 0.2, 0.55], scale: 0.56, seed: 2, bend: 0.6 } ] },
+  // lily C – lower left, faces left-front
+  { pts: [B, [-0.5, -1.6, 0.25], [-0.65, -0.9, 0.4], [-0.5, -0.4, 0.4]], r: [0.03, 0.02], t: [0.07, 0.46], items: [
+    { type: 'leaf', s: 0.25, dir: [-0.25, 0.85, 0.45], len: 1.05, w: 0.22, roll: -0.9, curl: 0.5 },
+    { type: 'leaf', s: 0.45, dir: [-0.9, -0.4, 0.25], len: 1.1, w: 0.24, roll: -0.2, curl: 0.9 },
+    { type: 'leaf', s: 0.78, dir: [-0.95, 0.25, -0.15], len: 1.15, w: 0.25, roll: 0.5, curl: 0.5 },
+    { type: 'lily', s: 1, dir: [-0.72, -0.12, 0.68], scale: 0.58, seed: 3, bend: 0.5 } ] },
+  // tall bud – top right, with tendril
+  { pts: [B, [0.1, -1.2, -0.4], [0.5, 0.4, -0.55], [0.9, 1.7, -0.4]], r: [0.028, 0.018], t: [0.12, 0.58], items: [
+    { type: 'leaf', s: 0.38, dir: [0.3, 0.85, 0.2], len: 1.1, w: 0.2, roll: 0.9, curl: 0.45 },
+    { type: 'leaf', s: 0.6, dir: [0.95, 0.4, -0.3], len: 0.85, w: 0.18, roll: 0.3, curl: 0.5 },
+    { type: 'leaf', s: 0.74, dir: [-0.7, 0.6, -0.3], len: 0.7, w: 0.15, roll: -0.3, curl: 0.4 },
+    { type: 'cluster', s: 0.86, dir: [0.9, 0.5, 0.3], n: 4, scale: 0.3, len: 0.35, seed: 4, leaves: 2 },
+    { type: 'minibud', s: 0.93, dir: [0.6, 0.8, 0.1], len: 0.3 },
+    { type: 'bud', s: 1, dir: [0.45, 0.88, 0.1], scale: 0.62, open: 0.15, seed: 4, bend: 0.45, bendAz: 1.2 },
+    { type: 'tendril', s: 1, dir: [0.48, 0.87, 0.05] } ] },
+  // second bud – top, slightly left
+  { pts: [B, [-0.3, -1.2, -0.2], [-0.2, 0.3, -0.45], [-0.05, 1.35, -0.3]], r: [0.028, 0.018], t: [0.15, 0.6], items: [
+    { type: 'leaf', s: 0.35, dir: [-0.45, 0.8, 0.3], len: 1.0, w: 0.19, roll: -0.8, curl: 0.5 },
+    { type: 'leaf', s: 0.55, dir: [-0.85, 0.45, -0.25], len: 0.85, w: 0.18, roll: -0.4, curl: 0.45 },
+    { type: 'leaf', s: 0.68, dir: [0.55, 0.65, 0.5], len: 0.65, w: 0.14, roll: 0.4, curl: 0.4 },
+    { type: 'minibud', s: 0.9, dir: [-0.5, 0.85, 0.2], len: 0.35 },
+    { type: 'bud', s: 1, dir: [-0.12, 0.98, 0.12], scale: 0.52, open: 0.08, seed: 5, bend: 0.4, bendAz: -1.8 } ] },
+  // left sprig of small flowers
+  { pts: [B, [-0.65, -1.5, 0.3], [-1.0, -0.45, 0.35], [-1.15, 0.4, 0.25]], r: [0.024, 0.014], t: [0.2, 0.62], items: [
+    { type: 'leaf', s: 0.4, dir: [-0.65, 0.6, 0.5], len: 1.0, w: 0.2, roll: -0.8, curl: 0.5 },
+    { type: 'leaf', s: 0.65, dir: [-0.9, 0.45, 0.1], len: 0.8, w: 0.17, roll: -0.3, curl: 0.5 },
+    { type: 'leaf', s: 0.82, dir: [-1, -0.05, 0.35], len: 0.65, w: 0.14, roll: 0.2, curl: 0.5 },
+    { type: 'cluster', s: 1, dir: [-0.45, 0.85, 0.3], n: 9, scale: 0.3, len: 0.42, seed: 6, leaves: 3 } ] },
+  // centre cluster under lily A
+  { pts: [B, [-0.2, -1.7, 0.4], [0.0, -1.05, 0.55], [0.05, -0.55, 0.6]], r: [0.024, 0.014], t: [0.22, 0.6], items: [
+    { type: 'leaf', s: 0.35, dir: [0.55, 0.55, 0.6], len: 1.0, w: 0.2, roll: 0.8, curl: 0.5 },
+    { type: 'leaf', s: 0.8, dir: [0.6, -0.3, 0.7], len: 0.5, w: 0.11, roll: 0.3, curl: 0.5 },
+    { type: 'cluster', s: 1, dir: [0.1, 0.55, 0.83], n: 8, scale: 0.32, len: 0.38, seed: 7, leaves: 2 } ] },
+  // right trailing sprig
+  { pts: [B, [0.3, -1.9, 0.2], [0.7, -1.3, 0.35], [0.95, -0.7, 0.3]], r: [0.024, 0.014], t: [0.24, 0.64], items: [
+    { type: 'leaf', s: 0.7, dir: [0.9, -0.35, 0.25], len: 0.55, w: 0.11, roll: 0.2, curl: 0.6 },
+    { type: 'leaf', s: 0.88, dir: [0.7, 0.35, 0.45], len: 0.5, w: 0.1, roll: -0.3, curl: 0.5 },
+    { type: 'cluster', s: 1, dir: [0.45, 0.7, 0.55], n: 7, scale: 0.28, len: 0.42, seed: 8, leaves: 3 } ] },
+  // big single 5-petal flower + small ones, bottom centre
+  { pts: [B, [-0.35, -1.95, 0.35], [-0.32, -1.5, 0.55]], r: [0.024, 0.016], t: [0.18, 0.5], items: [
+    { type: 'cluster', s: 0.6, dir: [0.5, -0.2, 0.8], n: 4, scale: 0.28, len: 0.3, seed: 9 },
+    { type: 'cluster', s: 1, dir: [-0.15, 0.15, 0.98], n: 1, scale: 0.85, len: 0.12, seed: 10 } ] },
+  // bottom-left curling leaves
+  { pts: [B, [-0.6, -2.55, 0.1], [-1.0, -2.05, 0.25]], r: [0.03, 0.02], t: [0.05, 0.4], items: [
+    { type: 'leaf', s: 0.35, dir: [-0.55, -0.85, 0.25], len: 0.95, w: 0.2, roll: -0.3, curl: 1.1 },
+    { type: 'leaf', s: 0.7, dir: [-0.95, -0.35, 0.2], len: 1.1, w: 0.23, roll: 0.3, curl: 0.9 },
+    { type: 'leaf', s: 1, dir: [-0.75, 0.5, 0.35], len: 0.95, w: 0.21, roll: -0.5, curl: 0.6 } ] },
+  // bottom-right curling leaves
+  { pts: [B, [0.05, -2.6, -0.1], [0.4, -2.2, -0.25]], r: [0.03, 0.02], t: [0.06, 0.42], items: [
+    { type: 'leaf', s: 0.4, dir: [0.35, -0.9, 0.3], len: 0.9, w: 0.19, roll: 0.4, curl: 1.0 },
+    { type: 'leaf', s: 0.75, dir: [0.9, -0.4, 0.35], len: 0.9, w: 0.2, roll: -0.3, curl: 0.8 },
+    { type: 'leaf', s: 1, dir: [0.85, 0.25, -0.3], len: 0.8, w: 0.18, roll: 0.4, curl: 0.6 },
+    { type: 'cluster', s: 0.9, dir: [0.6, -0.5, 0.6], n: 3, scale: 0.26, len: 0.3, seed: 11, leaves: 1 } ] },
+  // leaves hanging straight down from the base
+  { pts: [B, [-0.28, -2.55, 0.3]], r: [0.03, 0.02], t: [0.03, 0.3], items: [
+    { type: 'leaf', s: 0.5, dir: [0.3, -0.85, 0.4], len: 0.65, w: 0.15, roll: 0.3, curl: 0.9 },
+    { type: 'leaf', s: 1, dir: [-0.15, -0.95, 0.3], len: 0.8, w: 0.18, roll: 0, curl: 0.8 } ] },
+];
+const BUTTERFLIES = [
+  { pos: [1.15, -1.85, 0.6], size: 0.8, teal: false, rot: [-0.45, 0.25, -0.65], t: [0.72, 0.9], phase: 0 },
+  { pos: [1.15, -0.35, 0.55], size: 0.4, teal: true, rot: [0.15, -0.55, 0.5], t: [0.82, 0.97], phase: 2.1 },
+];
+
+/* =========================================================
+   build
+   ========================================================= */
+const growables = [];   // { update(p, time) }
+const leafMeshes = [];  // for idle flutter
+const lilies = [];
+
+STEMS.forEach((def, si) => {
+  const curve = new THREE.CatmullRomCurve3(curvy(def.pts.map(a => V(...a)), def.amp ?? 0.12, si * 1.7), false, 'catmullrom', 0.5);
+  const uni = { value: 0 };
+  const mesh = new THREE.Mesh(tubeGeo(curve, 48, 8, def.r[0], def.r[1], 0.8), growMaterial(uni));
+  bouquet.add(mesh);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(def.r[1] * 1.15, 10, 8), MAT.stem);
+  bouquet.add(tip);
+  const [t0, t1] = def.t;
+  const attachments = [];
+
+  for (const it of def.items) {
+    const pos = curve.getPointAt(it.s), dir = V(...it.dir).normalize();
+    const tA = t0 + smoothInv(it.s) * (t1 - t0);   // moment the growing stem tip reaches s
+    let obj, upd;
+    if (it.type === 'leaf') {
+      obj = makeLeaf({ L: it.len, W: it.w, curl: it.curl ?? 0.6, twist: 0.35 + ((it.s * 7) % 1) * 0.3, seed: it.s * 13 + it.len });
+      const qF = leafQuat(dir, it.roll ?? 0);
+      leafMeshes.push({ m: obj, qF, phase: it.s * 20 });
+      const qT = new THREE.Quaternion();
+      upd = p => { const e = range(p, tA - 0.02, tA + 0.14); const s = backOut(e); obj.scale.setScalar(Math.max(s, 1e-4)); obj.userData.unfurl = (1 - smooth(e)) * 1.1; obj.quaternion.copy(qF).multiply(qT.setFromAxisAngle(Z, -obj.userData.unfurl)); };
+    } else if (it.type === 'lily' || it.type === 'bud') {
+      const isBud = it.type === 'bud';
+      const qF = flowerQuat(dir, it.seed * 1.3);                       // final facing
+      const qS = flowerQuat(curve.getTangentAt(1), it.seed * 1.3);     // emerges along the stem
+      const downLocal = V(0, -1, 0).applyQuaternion(qF.clone().invert());       // the trumpet droops with gravity
+      const bendAz = it.bendAz ?? Math.atan2(downLocal.x, downLocal.z);
+      obj = makeLily({ scale: it.scale, seed: it.seed, Lmul: isBud ? 1.12 : 1, Wmul: isBud ? 0.92 : 1, open: isBud ? it.open : 0, bend: it.bend ?? 0, bendAz });
+      obj.userData.qBase = qF.clone();
+      obj.quaternion.copy(qF);
+      const base = obj.scale.x;
+      lilies.push({ g: obj, phase: it.seed * 2 });
+      const openWin = [t1 + 0.02, t1 + 0.26];
+      upd = p => {
+        const e = smooth(range(p, tA - 0.03, tA + 0.1));
+        obj.scale.setScalar(Math.max(base * (0.2 + 0.8 * e), 1e-4)); obj.visible = e > 0.001;
+        const turn = smooth(range(p, tA, isBud ? tA + 0.22 : openWin[1]));
+        obj.userData.qBase.copy(qS).slerp(qF, turn);
+        const op = isBud ? it.open * smooth(range(p, tA + 0.02, tA + 0.2)) : smooth(range(p, openWin[0], openWin[1]));
+        obj.userData.setOpen(op);
+      };
+    } else if (it.type === 'cluster') {
+      obj = makeCluster({ n: it.n, scale: it.scale, len: it.len, seed: it.seed, leaves: it.leaves ?? 0 });
+      obj.quaternion.copy(flowerQuat(dir));
+      upd = p => obj.userData.setGrow(range(p, tA - 0.02, tA + 0.24));
+    } else if (it.type === 'tendril') {
+      obj = makeTendril(dir);
+      upd = p => { const e = backOut(range(p, tA, tA + 0.12)); obj.scale.setScalar(Math.max(e, 1e-4)); };
+    } else if (it.type === 'minibud') {
+      obj = makeMiniBud(dir, it.len);
+      upd = p => { const e = backOut(range(p, tA, tA + 0.12)); obj.scale.setScalar(Math.max(e, 1e-4)); };
+    }
+    obj.position.copy(pos);
+    bouquet.add(obj);
+    attachments.push(upd);
+  }
+
+  growables.push({ update: p => {
+    const g = smooth(range(p, t0, t1));
+    uni.value = g;
+    tip.visible = g > 0.002 && g < 0.995;
+    if (tip.visible) { tip.position.copy(curve.getPointAt(g)); tip.scale.setScalar(0.6 + 0.4 * (1 - g)); }
+    for (const u of attachments) u(p);
+  } });
+});
+
+const flies = [];
+for (const bf of BUTTERFLIES) {
+  const obj = makeButterfly(bf);
+  obj.rotation.set(...bf.rot);
+  obj.position.set(...bf.pos);
+  bouquet.add(obj);
+  flies.push({ obj, home: V(...bf.pos), size: bf.size, win: bf.t, phase: bf.phase });
+  growables.push({ update: (p, t) => {
+    const e = smooth(range(p, bf.t[0], bf.t[1]));
+    obj.visible = e > 0.001;
+    if (!obj.visible) return;
+    obj.scale.setScalar(bf.size * backOut(e));
+    const ph = bf.phase;
+    obj.position.set(
+      bf.pos[0] + (1 - e) * 1.4 + Math.sin(t * 0.8 + ph) * 0.07,
+      bf.pos[1] - (1 - e) * 0.5 + Math.sin(t * 1.25 + ph) * 0.05,
+      bf.pos[2] + (1 - e) * 0.4 + Math.cos(t * 0.65 + ph) * 0.05);
+    obj.userData.flap(0.18 + 0.55 * (0.5 + 0.5 * Math.sin(t * 3.1 + ph)) + (1 - e) * 0.5);
+  } });
+}
+
+// centre the bouquet, measure it in the fully grown state
+for (const g of growables) g.update(1, 0);
+const box = new THREE.Box3().setFromObject(bouquet, true);
+const center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+bouquet.position.copy(center).multiplyScalar(-1);
+const bouquetH = size.y;
+
+/* =========================================================
+   material presets: pearl / holo / chrome  (+ acid PMREM env)
+   ========================================================= */
+const html = document.documentElement;
+const envRoom = scene.environment;
+let envAcid = null;
+function acidEnv() {
+  if (envAcid) return envAcid;
+  const s = new THREE.Scene();
+  // soft violet-grey dome (brighter above, darker below) so metals stay bright between the colour panels
+  const dome = new THREE.SphereGeometry(20, 24, 12), dp = dome.attributes.position, dc = new Float32Array(dp.count * 3), top = new THREE.Color(0xe6e0ff), bot = new THREE.Color(0x2a2340), tmp = new THREE.Color();
+  for (let i = 0; i < dp.count; i++) { tmp.copy(bot).lerp(top, smooth((dp.getY(i) / 20 + 1) / 2)).multiplyScalar(1.6); dc[i * 3] = tmp.r; dc[i * 3 + 1] = tmp.g; dc[i * 3 + 2] = tmp.b; }
+  dome.setAttribute('color', new THREE.BufferAttribute(dc, 3));
+  s.add(new THREE.Mesh(dome, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const panel = (hex, k, pos, size) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); s.add(m);
+  };
+  panel(0xffd6f4, 5, [0, 1, -9], [14, 9]);     // soft pink-white wall behind
+  panel(0xff3fd8, 10, [-7, 4, -4], [7, 4]);    // magenta
+  panel(0x2ff5ff, 10, [8, 3, -2], [6, 6]);     // cyan
+  panel(0xd8ff3a, 8, [0, 9, 2], [10, 3]);      // lime, overhead
+  panel(0x8a5cff, 9, [-6, -3, 6], [6, 5]);     // violet
+  panel(0xffffff, 14, [3, 6, 7], [3.5, 3.5]);  // white key
+  panel(0xffa03c, 7, [7, -5, 1], [5, 2.5]);    // orange
+  panel(0x3affc0, 7, [-3, -7, -3], [6, 3]);    // mint, below
+  panel(0xc8f0ff, 6, [-8, 1, 3], [4, 7]);      // ice, left
+  envAcid = pmrem.fromScene(s, 0.02).texture;
+  return envAcid;
+}
+const PRESETS = {
+  pearl: { env: 'room',
+    petal: { color: 0xffffff, metalness: 0.92, roughness: 0.22, clearcoat: 0.7, clearcoatRoughness: 0.16, sheen: 0.45, iridescence: 0.22, iridescenceIOR: 1.35, iridescenceThicknessRange: [100, 400], envMapIntensity: 1.15 },
+    leaf: { metalness: 0.86, roughness: 0.32, clearcoat: 1, iridescence: 0, iridescenceIOR: 1.3, iridescenceThicknessRange: [100, 400], envMapIntensity: 0.6 },
+    wing: { metalness: 0.85, roughness: 0.24, iridescence: 0.3, iridescenceIOR: 1.4 }, gold: { metalness: 1, roughness: 0.2 } },
+  holo: { env: 'acid',
+    petal: { color: 0xf6f7ff, metalness: 0.75, roughness: 0.14, clearcoat: 1, clearcoatRoughness: 0.06, sheen: 0.2, iridescence: 1, iridescenceIOR: 1.9, iridescenceThicknessRange: [140, 640], envMapIntensity: 1.5 },
+    leaf: { metalness: 0.85, roughness: 0.22, clearcoat: 1, iridescence: 0.75, iridescenceIOR: 1.7, iridescenceThicknessRange: [200, 720], envMapIntensity: 1.0 },
+    wing: { metalness: 0.8, roughness: 0.2, iridescence: 1, iridescenceIOR: 1.7 }, gold: { metalness: 1, roughness: 0.15 } },
+  chrome: { env: 'room',
+    petal: { color: 0xffffff, metalness: 1, roughness: 0.05, clearcoat: 0, clearcoatRoughness: 0, sheen: 0, iridescence: 0, iridescenceIOR: 1.3, iridescenceThicknessRange: [100, 400], envMapIntensity: 1.2 },
+    leaf: { metalness: 1, roughness: 0.1, clearcoat: 0, iridescence: 0, iridescenceIOR: 1.3, iridescenceThicknessRange: [100, 400], envMapIntensity: 0.8 },
+    wing: { metalness: 1, roughness: 0.08, iridescence: 0, iridescenceIOR: 1.3 }, gold: { metalness: 1, roughness: 0.08 } },
+};
+function assignMat(m, o) { for (const k in o) { if (k === 'color') m.color.set(o[k]); else if (Array.isArray(o[k])) m[k] = o[k].slice(); else m[k] = o[k]; } m.needsUpdate = true; }
+let preset = 'holo';
+function applyPreset(name) {
+  preset = PRESETS[name] ? name : 'holo';
+  const P = PRESETS[preset];
+  assignMat(MAT.petal, P.petal); assignMat(MAT.leaf, P.leaf); assignMat(MAT.wingCream, P.wing); assignMat(MAT.wingTeal, P.wing); assignMat(MAT.gold, P.gold);
+  scene.environment = P.env === 'acid' ? acidEnv() : envRoom;
+  html.dataset.preset = preset;
+  try { localStorage.setItem('rx-preset', preset); } catch (e) {}
+  for (const b of document.querySelectorAll('#seg button')) b.classList.toggle('on', b.dataset.preset === preset);
+}
+document.getElementById('seg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) applyPreset(b.dataset.preset); });
+
+/* =========================================================
+   theme
+   ========================================================= */
+function applyTheme(t) {
+  html.dataset.theme = t;
+  try { localStorage.setItem('rx-theme', t); } catch (e) {}
+  const dark = t === 'dark';
+  document.querySelector('meta[name=theme-color]').content = dark ? '#0a0b0b' : '#f3f0e8';
+  hemi.intensity = dark ? 0.25 : 0.55;
+  key.intensity = dark ? 2.6 : 2.2;
+  rim.intensity = dark ? 2.6 : 1.6;
+  fill.intensity = dark ? 6 : 12;
+  renderer.toneMappingExposure = dark ? 1.05 : 1.08;
+  scene.environmentIntensity = dark ? 0.8 : 0.9;
+}
+let savedTheme = null, savedPreset = null;
+try { savedTheme = localStorage.getItem('rx-theme'); savedPreset = localStorage.getItem('rx-preset'); } catch (e) {}
+applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+applyPreset(savedPreset || 'holo');
+document.getElementById('theme').addEventListener('click', () => applyTheme(html.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+/* =========================================================
+   layout (bouquet on the left, text on the right)
+   ========================================================= */
+const hero = document.getElementById('top');
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  const vis = 2 * camera.position.z * Math.tan(camera.fov * D2R / 2), visW = vis * camera.aspect;
+  const portrait = camera.aspect < 0.95 || w < 820;
+  root.scale.setScalar((portrait ? vis * 0.5 : vis * 0.88) / bouquetH);
+  root.position.set(portrait ? 0 : -visW * 0.24, portrait ? vis * 0.17 : 0.02, 0);
+  layoutName();
+}
+
+/* =========================================================
+   scroll / pointer
+   ========================================================= */
+let pT = 0, pS = 0;
+function onScroll() { pT = clamp(scrollY / Math.max(1, hero.offsetHeight - innerHeight)); }
+addEventListener('scroll', onScroll, { passive: true });
+
+let mx = 0, my = 0, dragging = false, lastX = 0, lastY = 0, spinY = 0, spinX = 0, velY = 0, velX = 0;
+addEventListener('pointermove', e => {
+  mx = (e.clientX / innerWidth) * 2 - 1; my = (e.clientY / innerHeight) * 2 - 1;
+  if (dragging) { velY = (e.clientX - lastX) * 0.008; velX = (e.clientY - lastY) * 0.004; spinY += velY; spinX = clamp(spinX + velX, -0.6, 0.6); lastX = e.clientX; lastY = e.clientY; }
+});
+canvas.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; dragging = true; lastX = e.clientX; lastY = e.clientY; velY = velX = 0; canvas.classList.add('dragging'); });
+addEventListener('pointerup', () => { dragging = false; canvas.classList.remove('dragging'); });
+
+/* =========================================================
+   hero text: holographic name, glitch, reveal
+   ========================================================= */
+const nameEl = document.getElementById('name');
+nameEl.innerHTML = [...nameEl.textContent].map(ch => `<span class="ch">${ch}</span>`).join('');
+const chars = [...nameEl.querySelectorAll('.ch')];
+let nameW = 0;
+function layoutName() { nameW = nameEl.offsetWidth; nameEl.style.setProperty('--nw', nameW + 'px'); for (const c of chars) c.style.setProperty('--ox', -c.offsetLeft + 'px'); }
+if (document.fonts) document.fonts.ready.then(layoutName);
+let nextGlitch = 4;
+function glitch() { nameEl.classList.remove('glitch'); void nameEl.offsetWidth; nameEl.classList.add('glitch'); setTimeout(() => nameEl.classList.remove('glitch'), 460); }
+const reveals = [...document.querySelectorAll('.intro [data-at]')].map(el => ({ el, at: +el.dataset.at, len: +el.dataset.len, isName: el === nameEl, isRule: el.classList.contains('rule') }));
+const cue = document.getElementById('cue'), pct = document.getElementById('pct'), hint = document.getElementById('hint');
+function updateText(p) {
+  for (const r of reveals) {
+    const e = smooth(range(p, r.at, r.at + r.len));
+    if (r.isName) {
+      chars.forEach((c, i) => { const ce = smooth(range(p, r.at + i * 0.018, r.at + i * 0.018 + r.len * 0.6)); c.style.opacity = ce; c.style.transform = `translateY(${(1 - ce) * 0.35}em) rotate(${(1 - ce) * -6}deg)`; c.style.filter = `blur(${(1 - ce) * 8}px)`; });
+    } else if (r.isRule) {
+      r.el.style.transform = `scaleX(${e})`; r.el.style.opacity = e > 0 ? 1 : 0;
+    } else {
+      r.el.style.opacity = e; r.el.style.transform = `translateY(${(1 - e) * 18}px)`; r.el.style.filter = `blur(${(1 - e) * 6}px)`;
+    }
+  }
+  cue.style.opacity = 1 - range(p, 0.02, 0.1);
+  pct.textContent = String(Math.round(p * 100)).padStart(3, '0');
+  hint.style.opacity = p > 0.9 ? 1 : 0;
+}
+
+/* =========================================================
+   tech-stack callouts pinned to the flowers
+   ========================================================= */
+const TAGS = [
+  { at: 0.66, anchor: [1.0, 1.95, -0.4], dx: 60, dy: -34, k: 'three.js r164', d: 'ParametricGeometry · morph targets · DoubleSide' },
+  { at: 0.72, anchor: [1.25, 0.35, 0.35], dx: 56, dy: -104, k: 'MeshPhysicalMaterial', d: 'clearcoat · sheen · thin-film iridescence' },
+  { at: 0.5, anchor: [-0.3, -2.25, 0], dx: -90, dy: 100, k: 'GLSL grow shader', d: 'onBeforeCompile · discard beyond uGrow' },
+  { at: 0.9, anchor: [1.35, -1.75, 0.6], dx: 80, dy: 64, k: 'PMREM environment', d: 'acid panels · ACES filmic · morph bloom' },
+];
+const tagsEl = document.getElementById('tags'), leadsEl = document.getElementById('leads'), SVGNS = 'http://www.w3.org/2000/svg';
+const tags = TAGS.map((t, i) => {
+  const el = document.createElement('div'); el.className = 'tag'; el.innerHTML = `<b>0${i + 1}</b><i>${t.k}</i><small>${t.d}</small>`; tagsEl.appendChild(el);
+  const line = document.createElementNS(SVGNS, 'polyline'); leadsEl.appendChild(line);
+  const dot = document.createElementNS(SVGNS, 'circle'); dot.setAttribute('r', 2.5); leadsEl.appendChild(dot);
+  return { ...t, el, line, dot, anchorV: V(...t.anchor) };
+});
+const _v = new THREE.Vector3();
+function updateTags(p) {
+  for (const tg of tags) {
+    const e = smooth(range(p, tg.at, tg.at + 0.06));
+    if (e <= 0.001) { tg.el.style.opacity = 0; tg.line.style.opacity = 0; tg.dot.style.opacity = 0; continue; }
+    _v.copy(tg.anchorV); bouquet.localToWorld(_v); _v.project(camera);
+    const ax = (_v.x + 1) / 2 * innerWidth, ay = (1 - _v.y) / 2 * innerHeight;
+    const lx = ax + tg.dx, ly = ay + tg.dy, sgn = Math.sign(tg.dx);
+    tg.el.style.opacity = e;
+    tg.el.style.transform = `translate(${(lx + (1 - e) * sgn * 14).toFixed(1)}px, ${ly.toFixed(1)}px) translate(${sgn < 0 ? '-100%' : '0'}, -50%)`;
+    tg.line.setAttribute('points', `${ax.toFixed(1)},${ay.toFixed(1)} ${(lx - sgn * 12).toFixed(1)},${ly.toFixed(1)} ${lx.toFixed(1)},${ly.toFixed(1)}`);
+    tg.line.style.opacity = e * 0.8;
+    tg.dot.setAttribute('cx', ax.toFixed(1)); tg.dot.setAttribute('cy', ay.toFixed(1)); tg.dot.style.opacity = e;
+  }
+}
+
+/* =========================================================
+   loop
+   ========================================================= */
+let last = performance.now();
+const _q = new THREE.Quaternion();
+function frame(now) { step(now); requestAnimationFrame(frame); }
+function step(now, snap = false) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const t = now / 1000;
+  pS += (pT - pS) * (snap ? 1 : 1 - Math.exp(-dt * 6));
+  const p = Math.max(pS, 0.05);           // a hint of sprouts before the first scroll
+
+  for (const g of growables) g.update(p, t);
+
+  // idle life: leaves flutter, lilies nod
+  for (const l of leafMeshes) { const a = 0.035 * Math.sin(t * 1.1 + l.phase) - (l.m.userData.unfurl || 0); l.m.quaternion.copy(l.qF).multiply(_q.setFromAxisAngle(Z, a)); }
+  for (const l of lilies) { l.g.quaternion.copy(l.g.userData.qBase).multiply(_q.setFromAxisAngle(X, 0.02 * Math.sin(t * 0.9 + l.phase))); }
+
+  if (!dragging) { velY *= 0.94; velX *= 0.9; spinY += velY; spinX = clamp(spinX + velX, -0.6, 0.6); }
+  spin.rotation.y = spinY + Math.sin(t * 0.3) * 0.16 + mx * 0.22;
+  spin.rotation.x = spinX + my * 0.08;
+
+  renderer.render(scene, camera);
+
+  updateText(pS);
+  updateTags(p);
+  if (nameW > 0) nameEl.style.setProperty('--shift', ((t * 40) % nameW).toFixed(1) + 'px');
+  if (t > nextGlitch && pS > 0.45) { glitch(); nextGlitch = t + 9 + Math.random() * 9; }
+}
+addEventListener('resize', fit);
+fit(); onScroll();
+requestAnimationFrame(frame);
+
+// debug hook: __rx.set(progress, spinY, spinX, time) renders one frame synchronously
+window.__rx = {
+  set(p, sy = 0, sx = 0, time = 0) { pT = pS = p; spinY = sy; spinX = sx; velY = velX = 0; mx = my = 0; last = time * 1000 - 16; step(time * 1000, true); },
+  theme: applyTheme, preset: applyPreset,
+};
+// ?p=1&theme=dark&preset=holo&sy=3.14 — jump straight to a state (used for screenshots)
+const qp = new URLSearchParams(location.search);
+if (qp.has('p')) {
+  const jump = () => { if (qp.get('theme')) applyTheme(qp.get('theme')); if (qp.get('preset')) applyPreset(qp.get('preset')); window.__rx.set(+qp.get('p'), +(qp.get('sy') || 0), 0, +(qp.get('t') || 0)); };
+  setTimeout(jump, 300);
+  if (document.fonts) document.fonts.ready.then(() => setTimeout(jump, 50));
+}
+</script>
+</body>
+</html>
