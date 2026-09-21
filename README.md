@@ -4,6 +4,8 @@
 
 ## 运行
 
+线上：<https://yuki4266.github.io/metal-lily-hero/>（GitHub Pages，推 `main` 自动更新）。
+
 单文件，无构建。three.js 通过 jsdelivr importmap 加载，字体来自 Google Fonts，需要联网。
 
 ```bash
